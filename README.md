@@ -34,4 +34,4 @@ The implemented models can be seen in the **[Efficient Transformer Library](/rec
 
 path: /recbole/model/efficient_transformer_recommender/
 
-e.g., Linformer, Performer, Synthesizer, etc.
+e.g., [Linformer](/recbole/model/efficient_transformer_recommender/linformer.py), [Performer](/recbole/model/efficient_transformer_recommender/performer.py), [Synthesizer](/recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
