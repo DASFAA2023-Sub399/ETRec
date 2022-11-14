@@ -30,8 +30,8 @@ python run_recbole_trm.py -m [model] -d [dataset]
 
 ## Implemented Models
 
-The implemented models can be seen in the **[Efficient Transformer Library](/recbole/model/transformer_recommender/)**.
+The implemented models can be seen in the **[Efficient Transformer Library](/recbole/model/efficient_transformer_recommender/)**.
 
-path: /recbole/model/transformer_recommender/
+path: /recbole/model/efficient_transformer_recommender/
 
 e.g., Linformer, Performer, Synthesizer, etc.
