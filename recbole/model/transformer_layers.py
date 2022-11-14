@@ -15,20 +15,27 @@ from recbole.model.layers import FeedForward, MultiHeadAttention
 
 ### MLPMixer ###
 class MLPMixerEncoder(nn.Module):
-    def __init__(self,
-                 n_layers=2,
-                 hidden_size=64,
-                 seq_len=50,
-                 inner_size=256,
-                 hidden_dropout_prob=0.5,
-                 hidden_act='gelu',
-                 layer_norm_eps=1e-12):
+    def __init__(
+        self,
+        n_layers=2,
+        hidden_size=64,
+        seq_len=50,
+        inner_size=256,
+        hidden_dropout_prob=0.5,
+        hidden_act="gelu",
+        layer_norm_eps=1e-12,
+    ):
         super(MLPMixerEncoder, self).__init__()
 
-        layer = MLPMixerLayer(hidden_size, seq_len, inner_size,
-                              hidden_dropout_prob, hidden_act, layer_norm_eps)
-        self.layer = nn.ModuleList([copy.deepcopy(layer)
-                                    for _ in range(n_layers)])
+        layer = MLPMixerLayer(
+            hidden_size,
+            seq_len,
+            inner_size,
+            hidden_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
 
     def forward(self, hidden_states, output_all_encoded_layers=True):
         all_encoder_layers = []
@@ -42,17 +49,42 @@ class MLPMixerEncoder(nn.Module):
 
 
 class MLPMixerLayer(nn.Module):
-    def __init__(self, hidden_size, seq_len, intermediate_size,
-                 hidden_dropout_prob, hidden_act, layer_norm_eps):
+    def __init__(
+        self,
+        hidden_size,
+        seq_len,
+        intermediate_size,
+        hidden_dropout_prob,
+        hidden_act,
+        layer_norm_eps,
+    ):
         super(MLPMixerLayer, self).__init__()
         self.chan_first, self.chan_last = partial(nn.Conv1d, kernel_size=1), nn.Linear
-        self.expansion_factor = intermediate_size//hidden_size
-        self.pre1 = PreNormResidual(hidden_size, FlexFeedForward(seq_len, self.expansion_factor,
-                                                                 hidden_dropout_prob, hidden_act,
-                                                                 layer_norm_eps, self.chan_first), layer_norm_eps)
-        self.pre2 = PreNormResidual(hidden_size, FlexFeedForward(hidden_size, self.expansion_factor,
-                                                                 hidden_dropout_prob, hidden_act,
-                                                                 layer_norm_eps, self.chan_last), layer_norm_eps)
+        self.expansion_factor = intermediate_size // hidden_size
+        self.pre1 = PreNormResidual(
+            hidden_size,
+            FlexFeedForward(
+                seq_len,
+                self.expansion_factor,
+                hidden_dropout_prob,
+                hidden_act,
+                layer_norm_eps,
+                self.chan_first,
+            ),
+            layer_norm_eps,
+        )
+        self.pre2 = PreNormResidual(
+            hidden_size,
+            FlexFeedForward(
+                hidden_size,
+                self.expansion_factor,
+                hidden_dropout_prob,
+                hidden_act,
+                layer_norm_eps,
+                self.chan_last,
+            ),
+            layer_norm_eps,
+        )
 
     def forward(self, hidden_states):
         item_mixer_output = self.pre1(hidden_states)
@@ -71,7 +103,15 @@ class PreNormResidual(nn.Module):
 
 
 class FlexFeedForward(nn.Module):
-    def __init__(self, dim, expansion_factor, dropout_prob, hidden_act, layer_norm_eps, dense=nn.Linear):
+    def __init__(
+        self,
+        dim,
+        expansion_factor,
+        dropout_prob,
+        hidden_act,
+        layer_norm_eps,
+        dense=nn.Linear,
+    ):
         super(FlexFeedForward, self).__init__()
         self.dense_1 = dense(dim, dim * expansion_factor)
         self.intermediate_act_fn = self.get_hidden_act(hidden_act)
@@ -109,19 +149,26 @@ class FlexFeedForward(nn.Module):
 
 ### gMLP ###
 class gMLPEncoder(nn.Module):
-    def __init__(self,
-                 n_layers=2,
-                 hidden_size=64,
-                 seq_len=50,
-                 inner_size=256,
-                 hidden_dropout_prob=0.5,
-                 hidden_act='gelu',
-                 layer_norm_eps=1e-12):
+    def __init__(
+        self,
+        n_layers=2,
+        hidden_size=64,
+        seq_len=50,
+        inner_size=256,
+        hidden_dropout_prob=0.5,
+        hidden_act="gelu",
+        layer_norm_eps=1e-12,
+    ):
         super(gMLPEncoder, self).__init__()
-        layer = gMLPLayer(hidden_size, seq_len, inner_size,
-                              hidden_dropout_prob, hidden_act, layer_norm_eps)
-        self.layer = nn.ModuleList([copy.deepcopy(layer)
-                                    for _ in range(n_layers)])
+        layer = gMLPLayer(
+            hidden_size,
+            seq_len,
+            inner_size,
+            hidden_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
 
     def forward(self, hidden_states, output_all_encoded_layers=True):
         all_encoder_layers = []
@@ -135,8 +182,15 @@ class gMLPEncoder(nn.Module):
 
 
 class gMLPLayer(nn.Module):
-    def __init__(self, hidden_size, seq_len, intermediate_size,
-                 hidden_dropout_prob, hidden_act, layer_norm_eps):
+    def __init__(
+        self,
+        hidden_size,
+        seq_len,
+        intermediate_size,
+        hidden_dropout_prob,
+        hidden_act,
+        layer_norm_eps,
+    ):
         super(gMLPLayer, self).__init__()
         self.ln = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.proj_1 = nn.Linear(hidden_size, intermediate_size)
@@ -173,27 +227,37 @@ class SpatialGatingUnit(nn.Module):
 class LinearMap(nn.Module):
     def __init__(self, seq_len, k_heads):
         super().__init__()
-        self.k_heads = k_heads # k head
-        #self.theta_k = nn.Parameter(torch.randn([self.k_heads, seq_len]))
+        self.k_heads = k_heads  # k head
+        # self.theta_k = nn.Parameter(torch.randn([self.k_heads, seq_len]))
         self.lin = nn.Linear(seq_len, self.k_heads, bias=True)
         torch.nn.init.xavier_normal_(self.lin.weight)
-        
-    def forward(self, input_tensor): # [B, L, d] -> [B, k, d]
-        #result = torch.matmul(self.theta_k, input_tensor)
-        result = self.lin(input_tensor.transpose(1,2))
-        return result.transpose(1,2)
+
+    def forward(self, input_tensor):  # [B, L, d] -> [B, k, d]
+        # result = torch.matmul(self.theta_k, input_tensor)
+        result = self.lin(input_tensor.transpose(1, 2))
+        return result.transpose(1, 2)
+
 
 class LinformerAttention(nn.Module):
-
-    def __init__(self, config, n_heads, seq_len, hidden_size, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps):
+    def __init__(
+        self,
+        config,
+        n_heads,
+        seq_len,
+        hidden_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        layer_norm_eps,
+    ):
         super(LinformerAttention, self).__init__()
         if hidden_size % n_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (hidden_size, n_heads))
-        k_heads = config['k_heads']
+                "heads (%d)" % (hidden_size, n_heads)
+            )
+        k_heads = config["k_heads"]
         self.num_attention_heads = n_heads
-        self.attention_head_size = int(hidden_size / n_heads) # 64
+        self.attention_head_size = int(hidden_size / n_heads)  # 64
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
         self.query = nn.Linear(hidden_size, self.all_head_size)
@@ -210,7 +274,10 @@ class LinformerAttention(nn.Module):
         self.out_dropout = nn.Dropout(hidden_dropout_prob)
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -224,12 +291,14 @@ class LinformerAttention(nn.Module):
         value_layer = self.transpose_for_scores(self.linear_value(mixed_value_layer))
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
-        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2)) #[1024, 2, 50, 50]
+        attention_scores = torch.matmul(
+            query_layer, key_layer.transpose(-1, -2)
+        )  # [1024, 2, 50, 50]
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         # [batch_size heads seq_len seq_len] scores
         # [batch_size 1 1 seq_len]
-        attention_scores = attention_scores #+ attention_mask #+ abs_pos_bias 
+        attention_scores = attention_scores  # + attention_mask #+ abs_pos_bias
 
         # Normalize the attention scores to probabilities.
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
@@ -238,10 +307,14 @@ class LinformerAttention(nn.Module):
 
         attention_probs = self.attn_dropout(attention_probs)
 
-        context_layer = torch.matmul(attention_probs, value_layer) #[1024, 2, 50, 32]
-        context_layer = context_layer.permute(0, 2, 1, 3).contiguous() #[1024, 50, 2, 32]
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,) #[1024, 50, 64]
-        context_layer = context_layer.view(*new_context_layer_shape) #[1024, 50, 64]
+        context_layer = torch.matmul(attention_probs, value_layer)  # [1024, 2, 50, 32]
+        context_layer = context_layer.permute(
+            0, 2, 1, 3
+        ).contiguous()  # [1024, 50, 2, 32]
+        new_context_layer_shape = context_layer.size()[:-2] + (
+            self.all_head_size,
+        )  # [1024, 50, 64]
+        context_layer = context_layer.view(*new_context_layer_shape)  # [1024, 50, 64]
 
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -251,14 +324,22 @@ class LinformerAttention(nn.Module):
 
 
 ### Synthesizer ###
-class SynthesizerAttention(nn.Module): 
-
-    def __init__(self, n_heads, seq_len, hidden_size, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps):
+class SynthesizerAttention(nn.Module):
+    def __init__(
+        self,
+        n_heads,
+        seq_len,
+        hidden_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        layer_norm_eps,
+    ):
         super(SynthesizerAttention, self).__init__()
         if hidden_size % n_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (hidden_size, n_heads))
+                "heads (%d)" % (hidden_size, n_heads)
+            )
         self.seq_len = seq_len
 
         self.k = int(0.1 * self.seq_len)
@@ -278,28 +359,37 @@ class SynthesizerAttention(nn.Module):
         self.out_dropout = nn.Dropout(hidden_dropout_prob)
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
     def forward(self, input_tensor, attention_mask):
-        
+
         mixed_query_layer = self.query(input_tensor)
-        mixed_key_layer = self.key(input_tensor) #[1024, 50, 64]
+        mixed_key_layer = self.key(input_tensor)  # [1024, 50, 64]
         mixed_value_layer = self.value(input_tensor)
 
         value_layer = self.transpose_for_scores(mixed_value_layer)
 
-        attention_scores = torch.matmul(mixed_query_layer, mixed_key_layer.transpose(-1, -2))
+        attention_scores = torch.matmul(
+            mixed_query_layer, mixed_key_layer.transpose(-1, -2)
+        )
 
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
         attention_probs = self.attn_dropout(attention_probs)
-        
+
         attention_probs = attention_probs.unsqueeze(1)
-        context_layer = torch.matmul(attention_probs, value_layer) #[1024, 2, 50, 32]
-        context_layer = context_layer.permute(0, 2, 1, 3).contiguous() #[1024, 50, 2, 32]
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,) #[1024, 50, 64]
-        context_layer = context_layer.view(*new_context_layer_shape) #[1024, 50, 64]
+        context_layer = torch.matmul(attention_probs, value_layer)  # [1024, 2, 50, 32]
+        context_layer = context_layer.permute(
+            0, 2, 1, 3
+        ).contiguous()  # [1024, 50, 2, 32]
+        new_context_layer_shape = context_layer.size()[:-2] + (
+            self.all_head_size,
+        )  # [1024, 50, 64]
+        context_layer = context_layer.view(*new_context_layer_shape)  # [1024, 50, 64]
 
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -310,13 +400,21 @@ class SynthesizerAttention(nn.Module):
 
 ### LinearTrm ###
 class LinearTrmAttention(nn.Module):
-
-    def __init__(self, n_heads, seq_len, hidden_size, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps):
+    def __init__(
+        self,
+        n_heads,
+        seq_len,
+        hidden_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        layer_norm_eps,
+    ):
         super(LinearTrmAttention, self).__init__()
         if hidden_size % n_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (hidden_size, n_heads))
+                "heads (%d)" % (hidden_size, n_heads)
+            )
         self.eps = 1e-6
         self.seq_len = seq_len
 
@@ -328,45 +426,54 @@ class LinearTrmAttention(nn.Module):
         self.key = nn.Linear(hidden_size, self.all_head_size)
         self.value = nn.Linear(hidden_size, self.all_head_size)
 
-        #self.attn_dropout = nn.Dropout(attn_dropout_prob)
+        # self.attn_dropout = nn.Dropout(attn_dropout_prob)
 
         self.dense = nn.Linear(hidden_size, hidden_size)
         self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.out_dropout = nn.Dropout(hidden_dropout_prob)
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x
 
     def forward(self, input_tensor, attention_mask):
         mixed_query_layer = self.query(input_tensor)
-        mixed_key_layer = self.key(input_tensor) #[1024, 50, 64]
+        mixed_key_layer = self.key(input_tensor)  # [1024, 50, 64]
         mixed_value_layer = self.value(input_tensor)
 
-        query_layer = self.transpose_for_scores(mixed_query_layer)#[1024, 50, 2, 32]
-        key_layer = self.transpose_for_scores(mixed_key_layer) 
+        query_layer = self.transpose_for_scores(mixed_query_layer)  # [1024, 50, 2, 32]
+        key_layer = self.transpose_for_scores(mixed_key_layer)
         value_layer = self.transpose_for_scores(mixed_value_layer)
-        
+
         query_layer = nn.functional.elu(query_layer) + 1
         key_layer = nn.functional.elu(key_layer) + 1
-        
-        #query_layer = query_layer.contiguous().permute(0, 2, 1, 3)#[1024, 2, 50, 32]
-        #key_layer = key_layer.contiguous().permute(0, 2, 1, 3)
-        #value_layer = value_layer.contiguous().permute(0, 2, 1, 3)
 
-        #key_value = torch.einsum('...sd,...se->...de', key_layer, value_layer)
-        #result = 1.0 / torch.einsum('...sd,...d->...s', query_layer, key_layer.sum(dim=-2) + self.eps)
-        #context_layer = torch.einsum('...de,...sd,...s->...se', key_value, query_layer, result)
-        
-        key_value = torch.einsum('nshd,nshm->nhmd', key_layer, value_layer)
-        result = 1.0 / torch.einsum('nlhd,nhd->nlh', query_layer, key_layer.sum(dim=1) + self.eps)
-        context_layer = torch.einsum('nlhd,nhmd,nlh->nlhm', query_layer, key_value, result)
+        # query_layer = query_layer.contiguous().permute(0, 2, 1, 3)#[1024, 2, 50, 32]
+        # key_layer = key_layer.contiguous().permute(0, 2, 1, 3)
+        # value_layer = value_layer.contiguous().permute(0, 2, 1, 3)
+
+        # key_value = torch.einsum('...sd,...se->...de', key_layer, value_layer)
+        # result = 1.0 / torch.einsum('...sd,...d->...s', query_layer, key_layer.sum(dim=-2) + self.eps)
+        # context_layer = torch.einsum('...de,...sd,...s->...se', key_value, query_layer, result)
+
+        key_value = torch.einsum("nshd,nshm->nhmd", key_layer, value_layer)
+        result = 1.0 / torch.einsum(
+            "nlhd,nhd->nlh", query_layer, key_layer.sum(dim=1) + self.eps
+        )
+        context_layer = torch.einsum(
+            "nlhd,nhmd,nlh->nlhm", query_layer, key_value, result
+        )
         context_layer = context_layer.contiguous()
 
-        #context_layer = context_layer.permute(0, 2, 1, 3).contiguous() #[1024, 50, 2, 32]
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,) #[1024, 50, 64]
-        context_layer = context_layer.view(*new_context_layer_shape) #[1024, 50, 64]
+        # context_layer = context_layer.permute(0, 2, 1, 3).contiguous() #[1024, 50, 2, 32]
+        new_context_layer_shape = context_layer.size()[:-2] + (
+            self.all_head_size,
+        )  # [1024, 50, 64]
+        context_layer = context_layer.view(*new_context_layer_shape)  # [1024, 50, 64]
 
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -377,16 +484,24 @@ class LinearTrmAttention(nn.Module):
 
 ### Performer ###
 class PerformerAttention(nn.Module):
-
-    def __init__(self, config, n_heads, seq_len, hidden_size, hidden_dropout_prob, attn_dropout_prob, \
-                 layer_norm_eps):
+    def __init__(
+        self,
+        config,
+        n_heads,
+        seq_len,
+        hidden_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        layer_norm_eps,
+    ):
         super(PerformerAttention, self).__init__()
         if hidden_size % n_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (hidden_size, n_heads))
-        ortho_scaling = config['ortho_scaling']
-        qr_uniform_q = config['qr_uniform_q']
+                "heads (%d)" % (hidden_size, n_heads)
+            )
+        ortho_scaling = config["ortho_scaling"]
+        qr_uniform_q = config["qr_uniform_q"]
         self.eps = 1e-6
         self.seq_len = seq_len
 
@@ -399,11 +514,25 @@ class PerformerAttention(nn.Module):
         self.value = nn.Linear(hidden_size, self.all_head_size)
 
         # performer part
-        self.nb_features = int(config['nb_features_ratio'] * self.seq_len)  # int(self.attention_head_size * math.log(self.attention_head_size)) 
+        self.nb_features = int(
+            config["nb_features_ratio"] * self.seq_len
+        )  # int(self.attention_head_size * math.log(self.attention_head_size))
         self.ortho_scaling = ortho_scaling
-        
-        self.create_projection_q = partial(self.gaussian_orthogonal_random_matrix, nb_rows = self.nb_features, nb_columns = self.attention_head_size, scaling = ortho_scaling, qr_uniform_q = qr_uniform_q)
-        self.create_projection_k = partial(self.gaussian_orthogonal_random_matrix, nb_rows = self.nb_features, nb_columns = self.attention_head_size, scaling = ortho_scaling, qr_uniform_q = qr_uniform_q)
+
+        self.create_projection_q = partial(
+            self.gaussian_orthogonal_random_matrix,
+            nb_rows=self.nb_features,
+            nb_columns=self.attention_head_size,
+            scaling=ortho_scaling,
+            qr_uniform_q=qr_uniform_q,
+        )
+        self.create_projection_k = partial(
+            self.gaussian_orthogonal_random_matrix,
+            nb_rows=self.nb_features,
+            nb_columns=self.attention_head_size,
+            scaling=ortho_scaling,
+            qr_uniform_q=qr_uniform_q,
+        )
         self.projection_matrix_q = self.create_projection_q()
         self.projection_matrix_k = self.create_projection_k()
 
@@ -412,10 +541,10 @@ class PerformerAttention(nn.Module):
         self.dense = nn.Linear(hidden_size, hidden_size)
         self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.out_dropout = nn.Dropout(hidden_dropout_prob)
-    
-    def orthogonal_matrix_chunk(self, cols, qr_uniform_q = False, device = None):
-        unstructured_block = torch.randn((cols, cols), device = device)
-        q, r = torch.qr(unstructured_block.cpu(), some = True)
+
+    def orthogonal_matrix_chunk(self, cols, qr_uniform_q=False, device=None):
+        unstructured_block = torch.randn((cols, cols), device=device)
+        q, r = torch.qr(unstructured_block.cpu(), some=True)
         q, r = map(lambda t: t.to(device), (q, r))
 
         # proposed by @Parskatt
@@ -425,91 +554,131 @@ class PerformerAttention(nn.Module):
             q *= d.sign()
         return q.t()
 
-    def gaussian_orthogonal_random_matrix(self, nb_rows, nb_columns, scaling = 0, qr_uniform_q = False, device = None):
-        nb_full_blocks = int(nb_rows / nb_columns) # 5
+    def gaussian_orthogonal_random_matrix(
+        self, nb_rows, nb_columns, scaling=0, qr_uniform_q=False, device=None
+    ):
+        nb_full_blocks = int(nb_rows / nb_columns)  # 5
         block_list = []
 
         for _ in range(nb_full_blocks):
-            q = self.orthogonal_matrix_chunk(nb_columns, qr_uniform_q = qr_uniform_q, device = device)
+            q = self.orthogonal_matrix_chunk(
+                nb_columns, qr_uniform_q=qr_uniform_q, device=device
+            )
             block_list.append(q)
 
         remaining_rows = nb_rows - nb_full_blocks * nb_columns
         if remaining_rows > 0:
-            q = self.orthogonal_matrix_chunk(nb_columns, qr_uniform_q = qr_uniform_q, device = device)
+            q = self.orthogonal_matrix_chunk(
+                nb_columns, qr_uniform_q=qr_uniform_q, device=device
+            )
             block_list.append(q[:remaining_rows])
 
         final_matrix = torch.cat(block_list)
 
         if scaling == 0:
-            multiplier = torch.randn((nb_rows, nb_columns), device = device).norm(dim = 1)
+            multiplier = torch.randn((nb_rows, nb_columns), device=device).norm(dim=1)
         elif scaling == 1:
-            multiplier = math.sqrt((float(nb_columns))) * torch.ones((nb_rows,), device = device)
+            multiplier = math.sqrt((float(nb_columns))) * torch.ones(
+                (nb_rows,), device=device
+            )
         else:
-            raise ValueError(f'Invalid scaling {scaling}')
-        
+            raise ValueError(f"Invalid scaling {scaling}")
+
         a = torch.diag(multiplier) @ final_matrix
-        return a #[160, 32]
+        return a  # [160, 32]
 
     def transpose_for_scores(self, x):
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
-    def softmax_kernel(self, data, *, projection_matrix, is_query, normalize_data=True, eps=1e-4, device = None):
+    def softmax_kernel(
+        self,
+        data,
+        *,
+        projection_matrix,
+        is_query,
+        normalize_data=True,
+        eps=1e-4,
+        device=None,
+    ):
         b, h, *_ = data.shape
 
-        data_normalizer = (data.shape[-1] ** -0.25) if normalize_data else 1.
+        data_normalizer = (data.shape[-1] ** -0.25) if normalize_data else 1.0
 
-        ratio = (projection_matrix.shape[0] ** -0.5)
+        ratio = projection_matrix.shape[0] ** -0.5
 
-        projection = repeat(projection_matrix, 'j d -> b h j d', b = b, h = h)
+        projection = repeat(projection_matrix, "j d -> b h j d", b=b, h=h)
         projection = projection.type_as(data)
-        #print('projection', projection.size())
+        # print('projection', projection.size())
 
-        data_dash = torch.einsum('...id,...jd->...ij', (data_normalizer * data), projection)
-        #print('data_dash1', data_dash.size())
-        diag_data = data ** 2
+        data_dash = torch.einsum(
+            "...id,...jd->...ij", (data_normalizer * data), projection
+        )
+        # print('data_dash1', data_dash.size())
+        diag_data = data**2
         diag_data = torch.sum(diag_data, dim=-1)
-        diag_data = (diag_data / 2.0) * (data_normalizer ** 2)
+        diag_data = (diag_data / 2.0) * (data_normalizer**2)
         diag_data = diag_data.unsqueeze(dim=-1)
-        #print('diag_data', diag_data.size())
+        # print('diag_data', diag_data.size())
 
         if is_query:
             data_dash = ratio * (
-                torch.exp(data_dash - diag_data -
-                        torch.max(data_dash, dim=-1, keepdim=True).values) + eps)
+                torch.exp(
+                    data_dash
+                    - diag_data
+                    - torch.max(data_dash, dim=-1, keepdim=True).values
+                )
+                + eps
+            )
         else:
             data_dash = ratio * (
-                torch.exp(data_dash - diag_data - torch.max(data_dash)) + eps)
-        #print('data_dash2', data_dash.size())
+                torch.exp(data_dash - diag_data - torch.max(data_dash)) + eps
+            )
+        # print('data_dash2', data_dash.size())
         return data_dash.type_as(data)
 
     def linear_attention(self, q, k, v):
-        k_cumsum = k.sum(dim = -2)
-        D_inv = 1. / torch.einsum('...nd,...d->...n', q, k_cumsum.type_as(q))
-        context = torch.einsum('...nd,...ne->...de', k, v)
-        out = torch.einsum('...de,...nd,...n->...ne', context, q, D_inv)
+        k_cumsum = k.sum(dim=-2)
+        D_inv = 1.0 / torch.einsum("...nd,...d->...n", q, k_cumsum.type_as(q))
+        context = torch.einsum("...nd,...ne->...de", k, v)
+        out = torch.einsum("...de,...nd,...n->...ne", context, q, D_inv)
         return out
 
     def forward(self, input_tensor, attention_mask):
         mixed_query_layer = self.query(input_tensor)
-        mixed_key_layer = self.key(input_tensor) #[1024, 50, 64]
+        mixed_key_layer = self.key(input_tensor)  # [1024, 50, 64]
         mixed_value_layer = self.value(input_tensor)
 
-        query_layer = self.transpose_for_scores(mixed_query_layer)#[1024, 2, 50, 32]
-        key_layer = self.transpose_for_scores(mixed_key_layer) 
+        query_layer = self.transpose_for_scores(mixed_query_layer)  # [1024, 2, 50, 32]
+        key_layer = self.transpose_for_scores(mixed_key_layer)
         value_layer = self.transpose_for_scores(mixed_value_layer)
 
-        create_kernel_q = partial(self.softmax_kernel, projection_matrix = self.projection_matrix_q, device = query_layer.device)
-        create_kernel_k = partial(self.softmax_kernel, projection_matrix = self.projection_matrix_k, device = query_layer.device)
-        query_layer = create_kernel_q(query_layer, is_query = True)
-        key_layer = create_kernel_k(key_layer, is_query = False)
-        #print('query_layer', query_layer.size())
+        create_kernel_q = partial(
+            self.softmax_kernel,
+            projection_matrix=self.projection_matrix_q,
+            device=query_layer.device,
+        )
+        create_kernel_k = partial(
+            self.softmax_kernel,
+            projection_matrix=self.projection_matrix_k,
+            device=query_layer.device,
+        )
+        query_layer = create_kernel_q(query_layer, is_query=True)
+        key_layer = create_kernel_k(key_layer, is_query=False)
+        # print('query_layer', query_layer.size())
         context_layer = self.linear_attention(query_layer, key_layer, value_layer)
 
-        context_layer = context_layer.permute(0, 2, 1, 3).contiguous() #[1024, 50, 2, 32]
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,) #[1024, 50, 64]
-        context_layer = context_layer.view(*new_context_layer_shape) #[1024, 50, 64]
+        context_layer = context_layer.permute(
+            0, 2, 1, 3
+        ).contiguous()  # [1024, 50, 2, 32]
+        new_context_layer_shape = context_layer.size()[:-2] + (
+            self.all_head_size,
+        )  # [1024, 50, 64]
+        context_layer = context_layer.view(*new_context_layer_shape)  # [1024, 50, 64]
 
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
@@ -520,62 +689,120 @@ class PerformerAttention(nn.Module):
 
 ### Common Light Layer and Encoder ###
 class LightAttentionTransformerLayer(nn.Module):
-
-    def __init__(self, config, n_heads, seq_len, hidden_size, intermediate_size,
-                 hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps):
+    def __init__(
+        self,
+        config,
+        n_heads,
+        seq_len,
+        hidden_size,
+        intermediate_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        hidden_act,
+        layer_norm_eps,
+    ):
         super(LightAttentionTransformerLayer, self).__init__()
-        model_name = config['model']
-        if model_name == 'Linformer':
-            self.multi_head_attention = LinformerAttention(config, n_heads, seq_len, hidden_size,
-                                        hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
-        elif model_name == 'Performer':
-            self.multi_head_attention = PerformerAttention(config, n_heads, seq_len, hidden_size,
-                                        hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
-        elif model_name == 'Synthesizer':
-            self.multi_head_attention = SynthesizerAttention(n_heads, seq_len, hidden_size,
-                                        hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
-        elif model_name == 'LinearTrm':
-            self.multi_head_attention = LinearTrmAttention(n_heads, seq_len, hidden_size,
-                                        hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
+        model_name = config["model"]
+        if model_name == "Linformer":
+            self.multi_head_attention = LinformerAttention(
+                config,
+                n_heads,
+                seq_len,
+                hidden_size,
+                hidden_dropout_prob,
+                attn_dropout_prob,
+                layer_norm_eps,
+            )
+        elif model_name == "Performer":
+            self.multi_head_attention = PerformerAttention(
+                config,
+                n_heads,
+                seq_len,
+                hidden_size,
+                hidden_dropout_prob,
+                attn_dropout_prob,
+                layer_norm_eps,
+            )
+        elif model_name == "Synthesizer":
+            self.multi_head_attention = SynthesizerAttention(
+                n_heads,
+                seq_len,
+                hidden_size,
+                hidden_dropout_prob,
+                attn_dropout_prob,
+                layer_norm_eps,
+            )
+        elif model_name == "LinearTrm":
+            self.multi_head_attention = LinearTrmAttention(
+                n_heads,
+                seq_len,
+                hidden_size,
+                hidden_dropout_prob,
+                attn_dropout_prob,
+                layer_norm_eps,
+            )
         else:
-            self.multi_head_attention = MultiHeadAttention(n_heads, seq_len, hidden_size,
-                                        hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
-        self.feed_forward = FeedForward(hidden_size, intermediate_size,
-                                         hidden_dropout_prob, hidden_act, layer_norm_eps)
+            self.multi_head_attention = MultiHeadAttention(
+                n_heads,
+                seq_len,
+                hidden_size,
+                hidden_dropout_prob,
+                attn_dropout_prob,
+                layer_norm_eps,
+            )
+        self.feed_forward = FeedForward(
+            hidden_size,
+            intermediate_size,
+            hidden_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
 
     def forward(self, hidden_states, attention_mask):
         attention_output = self.multi_head_attention(hidden_states, attention_mask)
         feedforward_output = self.feed_forward(attention_output)
         return feedforward_output
 
+
 class LightAttentionTransformerEncoder(nn.Module):
-    
-    def __init__(self,
-                 config, 
-                 n_layers=2,
-                 n_heads=2,
-                 seq_len=50, 
-                 hidden_size=64,
-                 inner_size=256,
-                 hidden_dropout_prob=0.5,
-                 attn_dropout_prob=0.5,
-                 hidden_act='gelu',
-                 layer_norm_eps=1e-12):
+    def __init__(
+        self,
+        config,
+        n_layers=2,
+        n_heads=2,
+        seq_len=50,
+        hidden_size=64,
+        inner_size=256,
+        hidden_dropout_prob=0.5,
+        attn_dropout_prob=0.5,
+        hidden_act="gelu",
+        layer_norm_eps=1e-12,
+    ):
 
         super(LightAttentionTransformerEncoder, self).__init__()
 
-        layer = LightAttentionTransformerLayer(config, n_heads, seq_len, hidden_size, inner_size,
-                                 hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps)
-        self.layer = nn.ModuleList([copy.deepcopy(layer)
-                                    for _ in range(n_layers)])
+        layer = LightAttentionTransformerLayer(
+            config,
+            n_heads,
+            seq_len,
+            hidden_size,
+            inner_size,
+            hidden_dropout_prob,
+            attn_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
 
-    def forward(self, hidden_states, attention_mask=None, output_all_encoded_layers=True):
+    def forward(
+        self, hidden_states, attention_mask=None, output_all_encoded_layers=True
+    ):
         all_encoder_layers = []
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask)
             if output_all_encoded_layers:
                 all_encoder_layers.append(hidden_states)
-        
+
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
         return all_encoder_layers
@@ -585,41 +812,58 @@ class LightAttentionTransformerEncoder(nn.Module):
 class ItemToInterestAggregation(nn.Module):
     def __init__(self, seq_len, hidden_size, k_interests=5):
         super().__init__()
-        self.k_interests = k_interests # k latent interests
+        self.k_interests = k_interests  # k latent interests
         self.theta = nn.Parameter(torch.randn([hidden_size, k_interests]))
-        
-    def forward(self, input_tensor): # [B, L, d] -> [B, k, d]
-        D_matrix = torch.matmul(input_tensor, self.theta) #[B, L, k]
+
+    def forward(self, input_tensor):  # [B, L, d] -> [B, k, d]
+        D_matrix = torch.matmul(input_tensor, self.theta)  # [B, L, k]
         D_matrix = nn.Softmax(dim=-2)(D_matrix)
-        result = torch.einsum('nij, nik -> nkj', input_tensor, D_matrix) # #[B, k, d]
+        result = torch.einsum("nij, nik -> nkj", input_tensor, D_matrix)  # #[B, k, d]
 
         return result
 
+
 class LightSANsAttention(nn.Module):
-    def __init__(self, n_heads, k_interests, hidden_size, seq_len, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps):
+    def __init__(
+        self,
+        n_heads,
+        k_interests,
+        hidden_size,
+        seq_len,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        layer_norm_eps,
+    ):
         super(LightSANsAttention, self).__init__()
         if hidden_size % n_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
-                "heads (%d)" % (hidden_size, n_heads))
-                
+                "heads (%d)" % (hidden_size, n_heads)
+            )
+
         self.num_attention_heads = n_heads
         self.attention_head_size = int(hidden_size / n_heads)
-        self.all_head_size = self.num_attention_heads * self.attention_head_size  
+        self.all_head_size = self.num_attention_heads * self.attention_head_size
 
         # initialization for low-rank decomposed self-attention
         self.query = nn.Linear(hidden_size, self.all_head_size)
         self.key = nn.Linear(hidden_size, self.all_head_size)
         self.value = nn.Linear(hidden_size, self.all_head_size)
 
-        self.attpooling_key = ItemToInterestAggregation(seq_len, hidden_size, k_interests)
-        self.attpooling_value = ItemToInterestAggregation(seq_len, hidden_size, k_interests)
+        self.attpooling_key = ItemToInterestAggregation(
+            seq_len, hidden_size, k_interests
+        )
+        self.attpooling_value = ItemToInterestAggregation(
+            seq_len, hidden_size, k_interests
+        )
 
         # initialization for decoupled position encoding
         self.attn_scale_factor = 2
         self.pos_q_linear = nn.Linear(hidden_size, self.all_head_size)
         self.pos_k_linear = nn.Linear(hidden_size, self.all_head_size)
-        self.pos_scaling = float(self.attention_head_size * self.attn_scale_factor) ** -0.5
+        self.pos_scaling = (
+            float(self.attention_head_size * self.attn_scale_factor) ** -0.5
+        )
         self.pos_ln = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
 
         self.attn_dropout = nn.Dropout(attn_dropout_prob)
@@ -628,8 +872,11 @@ class LightSANsAttention(nn.Module):
         self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.out_dropout = nn.Dropout(hidden_dropout_prob)
 
-    def transpose_for_scores(self, x): # transfor to multihead
-        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+    def transpose_for_scores(self, x):  # transfor to multihead
+        new_x_shape = x.size()[:-1] + (
+            self.num_attention_heads,
+            self.attention_head_size,
+        )
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
@@ -642,11 +889,13 @@ class LightSANsAttention(nn.Module):
         # low-rank decomposed self-attention: relation of items
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_for_scores(self.attpooling_key(mixed_key_layer))
-        value_layer = self.transpose_for_scores(self.attpooling_value(mixed_value_layer))
+        value_layer = self.transpose_for_scores(
+            self.attpooling_value(mixed_value_layer)
+        )
 
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-        
+
         # normalize the attention scores to probabilities.
         attention_probs = nn.Softmax(dim=-2)(attention_scores)
         attention_probs = self.attn_dropout(attention_probs)
@@ -655,7 +904,9 @@ class LightSANsAttention(nn.Module):
         # decoupled position encoding: relation of positions
         value_layer_pos = self.transpose_for_scores(mixed_value_layer)
         pos_emb = self.pos_ln(pos_emb).unsqueeze(0)
-        pos_query_layer = self.transpose_for_scores(self.pos_q_linear(pos_emb)) * self.pos_scaling
+        pos_query_layer = (
+            self.transpose_for_scores(self.pos_q_linear(pos_emb)) * self.pos_scaling
+        )
         pos_key_layer = self.transpose_for_scores(self.pos_k_linear(pos_emb))
 
         abs_pos_bias = torch.matmul(pos_query_layer, pos_key_layer.transpose(-1, -2))
@@ -675,38 +926,72 @@ class LightSANsAttention(nn.Module):
 
         return hidden_states
 
+
 class LightSANsLayer(nn.Module):
-    def __init__(self, n_heads, k_interests, hidden_size, seq_len, intermediate_size,
-                 hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps):
+    def __init__(
+        self,
+        n_heads,
+        k_interests,
+        hidden_size,
+        seq_len,
+        intermediate_size,
+        hidden_dropout_prob,
+        attn_dropout_prob,
+        hidden_act,
+        layer_norm_eps,
+    ):
         super(LightSANsLayer, self).__init__()
-        self.multi_head_attention = LightSANsAttention(n_heads, k_interests, hidden_size,
-                                       seq_len, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps)
-        self.feed_forward = FeedForward(hidden_size, intermediate_size,
-                                         hidden_dropout_prob, hidden_act, layer_norm_eps)
+        self.multi_head_attention = LightSANsAttention(
+            n_heads,
+            k_interests,
+            hidden_size,
+            seq_len,
+            hidden_dropout_prob,
+            attn_dropout_prob,
+            layer_norm_eps,
+        )
+        self.feed_forward = FeedForward(
+            hidden_size,
+            intermediate_size,
+            hidden_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
 
     def forward(self, hidden_states, pos_emb):
         attention_output = self.multi_head_attention(hidden_states, pos_emb)
         feedforward_output = self.feed_forward(attention_output)
         return feedforward_output
 
+
 class LightSANsEncoder(nn.Module):
-    def __init__(self,
-                 n_layers=2,
-                 n_heads=2,
-                 k_interests=5,
-                 hidden_size=64,
-                 seq_len=50,
-                 inner_size=256,
-                 hidden_dropout_prob=0.5,
-                 attn_dropout_prob=0.5,
-                 hidden_act='gelu',
-                 layer_norm_eps=1e-12):
+    def __init__(
+        self,
+        n_layers=2,
+        n_heads=2,
+        k_interests=5,
+        hidden_size=64,
+        seq_len=50,
+        inner_size=256,
+        hidden_dropout_prob=0.5,
+        attn_dropout_prob=0.5,
+        hidden_act="gelu",
+        layer_norm_eps=1e-12,
+    ):
 
         super(LightSANsEncoder, self).__init__()
-        layer = LightSANsLayer(n_heads, k_interests, hidden_size, seq_len, inner_size,
-                                 hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps)
-        self.layer = nn.ModuleList([copy.deepcopy(layer)
-                                    for _ in range(n_layers)])
+        layer = LightSANsLayer(
+            n_heads,
+            k_interests,
+            hidden_size,
+            seq_len,
+            inner_size,
+            hidden_dropout_prob,
+            attn_dropout_prob,
+            hidden_act,
+            layer_norm_eps,
+        )
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
 
     def forward(self, hidden_states, pos_emb, output_all_encoded_layers=True):
         all_encoder_layers = []
