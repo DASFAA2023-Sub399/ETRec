@@ -2,7 +2,7 @@
 
 Code for DASFAA-2023 submission:
 > Towards Efficient and Effective Transformers for Sequential Recommendation
-(running title: Towards Efficient Transformers for Sequential Recommendation)
+> (*Running Title*: Towards Efficient Transformers for Sequential Recommendation)
 
 Note: this library is being updated continuously.
 
@@ -18,11 +18,10 @@ pytorch>=1.7.0
 python>=3.7.0
 ```
 
-
 ## Implemented Models
 
 The implemented models can be seen in the **[Efficient Transformer Library](/recbole/model/efficient_transformer_recommender/)**.
 
-path: /recbole/model/efficient_transformer_recommender/
+*path*: /recbole/model/efficient_transformer_recommender/
 
-e.g., [Linformer](/recbole/model/efficient_transformer_recommender/linformer.py), [Performer](/recbole/model/efficient_transformer_recommender/performer.py), [Synthesizer](/recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
+e.g., Linformer (*path*: /recbole/model/efficient_transformer_recommender/linformer.py), Performer (*path*: /recbole/model/efficient_transformer_recommender/performer.py), Synthesizer (*path*: /recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
