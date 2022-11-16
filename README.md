@@ -2,7 +2,7 @@
 
 Note: this library is being updated continuously.
 
-The library is built upon [PyTorch](https://pytorch.org) and [RecBole](https://github.com/RUCAIBox/RecBole) for reproducing recommendation algorithms based on Transformers and exploring their effectiveness and efficiency.
+The library is built upon PyTorch and RecBole for reproducing recommendation algorithms based on Transformers and exploring their effectiveness and efficiency.
 
 
 ## Requirements
