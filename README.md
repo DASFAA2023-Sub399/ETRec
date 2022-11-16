@@ -19,7 +19,7 @@ recbole>=1.0.0
 
 ## Implemented Models
 
-The implemented models can be seen in the **[Efficient Transformer Library](/recbole/model/efficient_transformer_recommender/)**.
+The implemented models can be seen in the *Efficient Transformer Library*.
 
 *path*: /recbole/model/efficient_transformer_recommender/*  
 /recbole/model/transformer_layers.py  
