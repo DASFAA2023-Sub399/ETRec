@@ -6,7 +6,7 @@ Code for DASFAA-2023 submission:
 
 *Note*: this library is being updated continuously.
 
-The library is built upon PyTorch and RecBole for reproducing recommendation algorithms based on Transformers and exploring their effectiveness and efficiency.
+The library is built upon PyTorch and RecBole for reproducing recommendation algorithms based on Transformers and then exploring their effectiveness and efficiency.
 
 
 ## Requirements
