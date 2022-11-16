@@ -22,7 +22,10 @@ python>=3.7.0
 
 The implemented models can be seen in the **[Efficient Transformer Library](/recbole/model/efficient_transformer_recommender/)**.
 
-*path*: /recbole/model/efficient_transformer_recommender/
+*path*: /recbole/model/efficient_transformer_recommender/*  
+/recbole/model/transformer_layers.py  
+/recbole/properties/*
+
 
 e.g., Linformer (*path*: /recbole/model/efficient_transformer_recommender/linformer.py),  
 Performer (*path*: /recbole/model/efficient_transformer_recommender/performer.py),  
