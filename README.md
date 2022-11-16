@@ -21,11 +21,11 @@ recbole>=1.0.0
 
 The implemented models can be seen in *the library of efficient Transformers*.
 
-*path*: /recbole/model/efficient_transformer_recommender/*  
+path: /recbole/model/efficient_transformer_recommender/*  
 /recbole/model/transformer_layers.py  
 /recbole/properties/*
 
 
-*e.g.*, Linformer (*path*: /recbole/model/efficient_transformer_recommender/linformer.py),  
-Performer (*path*: /recbole/model/efficient_transformer_recommender/performer.py),  
-Synthesizer (*path*: /recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
+*e.g.*, Linformer (path: /recbole/model/efficient_transformer_recommender/linformer.py),  
+Performer (path: /recbole/model/efficient_transformer_recommender/performer.py),  
+Synthesizer (path: /recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
