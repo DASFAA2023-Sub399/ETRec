@@ -12,10 +12,9 @@ The library is built upon PyTorch and RecBole for reproducing recommendation alg
 ## Requirements
 
 ```
-recbole>=1.0.0
-pyg>=2.0.4
 pytorch>=1.7.0
 python>=3.7.0
+recbole>=1.0.0
 ```
 
 ## Implemented Models

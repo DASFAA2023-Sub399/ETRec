@@ -1,12 +1,3 @@
-"""
-MLP Mixer
-################################################
-
-Reference:
-    Ilya Tolstikhin et al. "MLP-Mixer: An all-MLP Architecture for Vision." in CoRR abs/2105.01601 (2021).
-
-"""
-
 import torch
 from torch import nn
 
