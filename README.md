@@ -1,7 +1,8 @@
 # Efficient Transformer Library
 
 Code for DASFAA-2023 submission:
-
+> Towards Efficient and Effective Transformers for Sequential Recommendation
+(running title: Towards Efficient Transformers for Sequential Recommendation)
 
 Note: this library is being updated continuously.
 
@@ -17,19 +18,6 @@ pytorch>=1.7.0
 python>=3.7.0
 ```
 
-## Quick-Start
-
-With the source code, you can use the provided script for initial usage of our library:
-
-```bash
-python run_recbole.py
-```
-
-If you want to change the models or datasets, just run the script by setting additional command parameters:
-
-```bash
-python run_recbole_trm.py -m [model] -d [dataset]
-```
 
 ## Implemented Models
 
