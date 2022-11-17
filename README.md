@@ -1,4 +1,4 @@
-# Efficient Transformer Library for Sequential Recommendation
+# The Library of Efficient Transformers for Sequential Recommendation
 
 Code for DASFAA-2023 submission:
 > Towards Efficient and Effective Transformers for Sequential Recommendation  
