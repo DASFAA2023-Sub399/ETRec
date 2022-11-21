@@ -1,4 +1,4 @@
-# Efficient Transformer Library
+# The Library of Efficient Transformers for Sequential Recommendation
 
 Code for DASFAA-2023 submission:
 > Towards Efficient and Effective Transformers for Sequential Recommendation  
@@ -21,11 +21,11 @@ recbole>=1.0.0
 
 The implemented models can be seen in *the library of efficient Transformers*.
 
-*path*: /recbole/model/efficient_transformer_recommender/*  
+path: /recbole/model/efficient_transformer_recommender/*   
 /recbole/model/transformer_layers.py  
-/recbole/properties/*
+/recbole/properties/model/*
 
 
-*e.g.*, Linformer (*path*: /recbole/model/efficient_transformer_recommender/linformer.py),  
-Performer (*path*: /recbole/model/efficient_transformer_recommender/performer.py),  
-Synthesizer (*path*: /recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
+*e.g.*, Linformer (path: /recbole/model/efficient_transformer_recommender/linformer.py),  
+Performer (path: /recbole/model/efficient_transformer_recommender/performer.py),  
+Synthesizer (path: /recbole/model/efficient_transformer_recommender/synthesizer.py), etc.
