@@ -1002,3 +1002,137 @@ class LightSANsEncoder(nn.Module):
         if not output_all_encoded_layers:
             all_encoder_layers.append(hidden_states)
         return all_encoder_layers
+
+
+### HaloNet ###
+class HaloNetEncoder(nn.Module):
+
+    def __init__(self,
+                 n_layers=2,
+                 n_heads=2,
+                 hidden_size=64,
+                 seq_len=50,
+                 inner_size=256,
+                 block_size=10,
+                 halo_size=6,
+                 attn_scale_factor=2,
+                 hidden_dropout_prob=0.5,
+                 attn_dropout_prob=0.5,
+                 hidden_act='gelu',
+                 layer_norm_eps=1e-12):
+        super(HaloNetEncoder, self).__init__()
+
+        self.hidden_size = hidden_size
+        self.seq_len = seq_len
+        layer = HaloNetLayer(n_heads, hidden_size, seq_len, inner_size, block_size, halo_size, attn_scale_factor,
+                             hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps)
+        self.layer = nn.ModuleList([copy.deepcopy(layer)
+                                    for _ in range(n_layers)])
+
+    def forward(self, hidden_states, output_all_encoded_layers=True):
+        all_encoder_layers = []
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states)
+            if output_all_encoded_layers:
+                all_encoder_layers.append(hidden_states)
+        if not output_all_encoded_layers:
+            all_encoder_layers.append(hidden_states)
+        return all_encoder_layers
+
+
+class HaloNetLayer(nn.Module):
+    def __init__(self, n_heads, hidden_size, seq_len, intermediate_size, block_size, halo_size, attn_scale_factor,
+                 hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps):
+        super(HaloNetLayer, self).__init__()
+        self.multi_head_attention = HaloAttention(n_heads, hidden_size, seq_len, block_size, halo_size,
+                                                  attn_scale_factor, hidden_dropout_prob,attn_dropout_prob, layer_norm_eps)
+        self.feed_forward = FeedForward(hidden_size, intermediate_size,
+                                         hidden_dropout_prob, hidden_act, layer_norm_eps)
+
+    def forward(self, hidden_states):
+        attention_output = self.multi_head_attention(hidden_states)
+        feedforward_output = self.feed_forward(attention_output)
+        return feedforward_output
+
+
+class HaloAttention(nn.Module):
+    def __init__(self, n_heads, hidden_size, seq_len, block_size, halo_size, attn_scale_factor, hidden_dropout_prob, attn_dropout_prob,
+                layer_norm_eps):
+        super(HaloAttention, self).__init__()
+        if hidden_size % n_heads != 0:
+            raise ValueError(
+                "The hidden size (%d) is not a multiple of the number of attention "
+                "heads (%d)" % (hidden_size, n_heads))
+
+        self.num_attention_heads = n_heads
+        self.attention_head_size = int(hidden_size / n_heads)
+        self.all_head_size = self.num_attention_heads * self.attention_head_size
+
+        self.blocks = seq_len // block_size
+        self.block_size = block_size
+        self.halo_size = halo_size
+
+        # initialization for low-rank decomposed self-attention
+        self.query = nn.Linear(hidden_size, self.all_head_size)
+        self.key = nn.Linear(hidden_size, self.all_head_size)
+        self.value = nn.Linear(hidden_size, self.all_head_size)
+
+        # initialization for decoupled position encoding
+        self.attn_scale_factor = attn_scale_factor
+        self.pos_q_linear = nn.Linear(hidden_size, self.all_head_size)
+        self.pos_k_linear = nn.Linear(hidden_size, self.all_head_size)
+        self.pos_scaling = float(self.attention_head_size * self.attn_scale_factor) ** -0.5
+        self.pos_ln = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+
+        self.attn_dropout = nn.Dropout(attn_dropout_prob)
+
+        self.dense = nn.Linear(hidden_size, hidden_size)
+        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.out_dropout = nn.Dropout(hidden_dropout_prob)
+
+    def transpose_for_scores(self, x):  # transfor to multihead
+        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        x = x.view(*new_x_shape)
+        return x.permute(0, 2, 1, 3)
+
+    def forward(self, input_tensor):
+        for i in range(self.blocks):
+            mixed_query_layer = self.query(input_tensor[:, i*self.block_size:(i+1)*self.block_size, :])
+            if i > 0:
+                left = i*self.block_size-self.halo_size
+            else:
+                left = 0
+            if i < self.blocks-1:
+                right = (i + 1) * self.block_size+self.halo_size
+            else:
+                right = (i + 1) * self.block_size
+            mixed_key_layer = self.key(input_tensor[:, left:right, :])
+            mixed_value_layer = self.value(input_tensor[:, left:right, :])  # [batch_size, seq_len, hidden_size]
+
+            query_layer = self.transpose_for_scores(mixed_query_layer)
+            key_layer = self.transpose_for_scores(mixed_key_layer)
+            value_layer = self.transpose_for_scores(mixed_value_layer)
+
+            # Take the dot product between "query" and "key" to get the raw attention scores.
+            attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+            attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+
+            # Normalize the attention scores to probabilities.
+            attention_probs = nn.Softmax(dim=-1)(attention_scores)
+            attention_probs = self.attn_dropout(attention_probs)
+            context_layer = torch.matmul(attention_probs, value_layer)
+
+            if i == 0:
+                all_context_layer = context_layer
+            else:
+                all_context_layer = torch.cat((all_context_layer, context_layer), dim=-2)
+
+        all_context_layer = all_context_layer.permute(0, 2, 1, 3).contiguous()
+        new_context_layer_shape = all_context_layer.size()[:-2] + (self.all_head_size,)
+        all_context_layer = all_context_layer.view(*new_context_layer_shape)
+
+        hidden_states = self.dense(all_context_layer)
+        hidden_states = self.out_dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)  # [batch_size, max_seq_len, hidden_size]
+
+        return hidden_states
